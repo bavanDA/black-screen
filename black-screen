@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Black Screen: lock, keyboard light off, screen off. Any key or mouse move wakes it
+# (your password is needed to get back in). Keyboard light comes back after unlock.
+SS=(org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver)
+prev=$(asusctl leds get 2>/dev/null | awk '{print tolower($NF)}')
+
+busctl --user call "${SS[@]}" Lock
+sleep 2
+asusctl leds set off >/dev/null 2>&1
+busctl --user set-property org.gnome.Mutter.DisplayConfig /org/gnome/Mutter/DisplayConfig \
+  org.gnome.Mutter.DisplayConfig PowerSaveMode i 3
+
+# wait until you unlock, then turn the keyboard light back on
+sleep 5
+while busctl --user call "${SS[@]}" GetActive 2>/dev/null | grep -q true; do sleep 3; done
+[ -n "$prev" ] && asusctl leds set "$prev" >/dev/null 2>&1
